@@ -3,80 +3,100 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Combinatorics Toolkit — Interactive Demo</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0c10'/><text x='50' y='70' font-size='52' text-anchor='middle' fill='%23b8f53d' font-family='monospace' font-weight='bold'>n!</text></svg>">
+<title>Macro Recorder — Capture. Edit. Replay.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0c10'/><circle cx='50' cy='50' r='18' fill='%23f87171'/></svg>">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#0a0c10;--panel:#12151c;--line:rgba(255,255,255,.09);--txt:#e8eaed;--mut:#9aa0a6;--acc:#b8f53d;--acc2:#7dd3fc}
+:root{--bg:#0a0c10;--panel:#12151c;--line:rgba(255,255,255,.09);--txt:#e8eaed;--mut:#9aa0a6;--acc:#f87171;--acc2:#b8f53d}
 body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
 .wrap{max-width:960px;margin:0 auto;padding:48px 20px 80px}
-.badge{display:inline-block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);border:1px solid rgba(184,245,61,.35);padding:6px 14px;border-radius:99px;margin-bottom:18px}
+.badge{display:inline-block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--acc);border:1px solid rgba(248,113,113,.35);padding:6px 14px;border-radius:99px;margin-bottom:18px}
 h1{font-size:clamp(32px,5vw,54px);font-weight:800;letter-spacing:-.02em;margin-bottom:12px}
 h1 span{color:var(--acc)}
 .sub{color:var(--mut);font-size:17px;max-width:640px;line-height:1.6;margin-bottom:36px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px}
-@media(max-width:640px){.grid{grid-template-columns:1fr}}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;transition:transform .25s,border-color .25s}
-.card:hover{transform:translateY(-4px);border-color:rgba(184,245,61,.4)}
-.card h3{font-size:15px;text-transform:uppercase;letter-spacing:.1em;color:var(--acc2);margin-bottom:14px}
-.row{display:flex;gap:10px;margin-bottom:12px}
-input{flex:1;background:#0a0c10;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:12px 14px;font-size:16px;min-width:0}
-input:focus{outline:none;border-color:var(--acc)}
-button{background:var(--acc);color:#0a0c10;border:none;border-radius:10px;padding:12px 22px;font-weight:700;font-size:15px;cursor:pointer;transition:transform .15s}
-button:hover{transform:scale(1.04)}
-.out{background:#0a0c10;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:15px;min-height:52px;word-break:break-all;line-height:1.6}
-.out b{color:var(--acc)}
-.note{color:var(--mut);font-size:13px;margin-top:8px;line-height:1.5}
-.links{margin-top:36px;display:flex;gap:12px;flex-wrap:wrap}
-.links a{color:var(--txt);text-decoration:none;border:1px solid var(--line);padding:11px 20px;border-radius:10px;font-size:14px;transition:border-color .2s}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;margin-bottom:16px}
+.card h3{font-size:15px;text-transform:uppercase;letter-spacing:.1em;color:var(--acc);margin-bottom:14px}
+.macro{background:#05070a;border:1px solid var(--line);border-radius:10px;padding:6px 0;font-family:ui-monospace,monospace;font-size:14px;max-height:280px;overflow-y:auto}
+.mrow{display:flex;gap:12px;padding:9px 16px;border-bottom:1px solid rgba(255,255,255,.04);align-items:center}
+.mrow:last-child{border-bottom:none}
+.mrow .t{color:var(--mut);min-width:70px}
+.mrow .k{color:var(--acc2)} .mrow .m{color:var(--acc)}
+.mrow.played{background:rgba(184,245,61,.05)}
+.row{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+button{background:var(--acc);color:#0a0c10;border:none;border-radius:10px;padding:11px 20px;font-weight:700;font-size:14px;cursor:pointer}
+button.ghost{background:transparent;color:var(--txt);border:1px solid var(--line)}
+button:disabled{opacity:.4;cursor:default}
+select{background:#0a0c10;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 14px;font-size:14px}
+label{color:var(--mut);font-size:13px}
+pre{background:#05070a;border:1px solid var(--line);border-radius:10px;padding:16px;font-size:13px;overflow-x:auto;line-height:1.7;color:var(--mut)}
+pre b{color:var(--acc2)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:28px}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.feat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+.feat h4{color:var(--acc2);font-size:14px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px}
+.feat p{color:var(--mut);font-size:14px;line-height:1.6}
+.note{margin-top:20px;border:1px solid rgba(248,113,113,.35);border-radius:12px;padding:16px 18px;color:var(--mut);font-size:13px;line-height:1.7}
+.note b{color:#f87171}
+.links{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+.links a{color:var(--txt);text-decoration:none;border:1px solid var(--line);padding:11px 20px;border-radius:10px;font-size:14px}
 .links a:hover{border-color:var(--acc)}
-footer{margin-top:56px;color:var(--mut);font-size:13px;text-align:center}
+footer{margin-top:48px;color:var(--mut);font-size:13px;text-align:center}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
 .reveal.on{opacity:1;transform:none}
 </style>
 </head>
 <body>
 <div class="wrap">
-<div class="badge reveal">Factorial-of-Numbers · Combinatorics Toolkit</div>
-<h1 class="reveal">Counting, <span>perfected.</span></h1>
-<p class="sub reveal">An interactive demo of the Combinatorics Toolkit — permutations, combinations, derangements and more, computed live in your browser. Full Python library with benchmarks in the repo.</p>
+<div class="badge reveal">Auto-Key-Presser · Macro Recorder</div>
+<h1 class="reveal">Capture. Edit. <span>Replay.</span></h1>
+<p class="sub reveal">Record keyboard + mouse macros, edit them as JSON, replay at any speed with loop counts and an Esc abort. Watch a recorded macro play back below.</p>
 
 <div class="grid">
-<div class="card reveal"><h3>nPr · Permutations</h3>
-<div class="row"><input id="npr-n" type="number" placeholder="n" value="10"><input id="npr-r" type="number" placeholder="r" value="3"><button onclick="calcNPR()">=</button></div>
-<div class="out" id="npr-out">—</div><p class="note">Ordered arrangements of r items from n.</p></div>
-
-<div class="card reveal"><h3>nCr · Combinations</h3>
-<div class="row"><input id="ncr-n" type="number" placeholder="n" value="52"><input id="ncr-r" type="number" placeholder="r" value="5"><button onclick="calcNCR()">=</button></div>
-<div class="out" id="ncr-out">—</div><p class="note">Poker hands from a 52-card deck: C(52,5).</p></div>
-
-<div class="card reveal"><h3>Factorial</h3>
-<div class="row"><input id="fact-n" type="number" placeholder="n" value="20"><button onclick="calcFact()">=</button></div>
-<div class="out" id="fact-out">—</div><p class="note">Exact big-integer factorial.</p></div>
-
-<div class="card reveal"><h3>Derangements !n</h3>
-<div class="row"><input id="der-n" type="number" placeholder="n" value="10"><button onclick="calcDer()">=</button></div>
-<div class="out" id="der-out">—</div><p class="note">Permutations where nothing stays in place (hat-check problem → 1/e).</p></div>
+<div class="feat reveal"><h4>Record</h4><p>Capture keystrokes, clicks and timing with pynput — saved as editable JSON.</p></div>
+<div class="feat reveal"><h4>Edit</h4><p>Filter noise, trim silences, drop mouse moves, remap keys — macros are data.</p></div>
+<div class="feat reveal"><h4>Replay</h4><p>Loop counts, 0.25×–4× speed control, dry-run preview, Esc aborts instantly.</p></div>
 </div>
+
+<div class="card reveal"><h3>Macro playback demo</h3>
+<div class="macro" id="macro"></div>
+<div class="row">
+<button id="playbtn" onclick="play()">▶ Replay macro</button>
+<label>Speed <select id="spd"><option value="1">1×</option><option value="2">2×</option><option value="0.5">0.5×</option></select></label>
+<label>Loops <select id="loops"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+<button class="ghost" onclick="reset()">Reset</button>
+</div></div>
+
+<div class="card reveal"><h3>macro.json — editable by hand</h3>
+<pre>{
+  "name": "login-flow",
+  "events": [
+    {"t": 0.0,  "type": "key",   "key": <b>"tab"</b>},
+    {"t": 0.3,  "type": "type",  "text": <b>"user@example.com"</b>},
+    {"t": 1.1,  "type": "key",   "key": <b>"tab"</b>},
+    {"t": 1.4,  "type": "key",   "key": <b>"enter"</b>}
+  ]
+}</pre></div>
+
+<div class="note reveal"><b>Responsible use:</b> built for UI testing, accessibility, and personal productivity. Never use macros to spam, harass, or break any platform's terms.</div>
 
 <div class="links reveal">
-<a href="https://github.com/HVRGAMING2705/Factorial-of-Numbers">View source on GitHub</a>
-<a href="https://github.com/HVRGAMING2705/Factorial-of-Numbers/blob/main/combinatorics.py">combinatorics.py</a>
-<a href="https://github.com/HVRGAMING2705/Factorial-of-Numbers/blob/main/benchmark.py">benchmark.py</a>
+<a href="https://github.com/HVRGAMING2705/Auto-Key-Presser">View source on GitHub</a>
+<a href="https://github.com/HVRGAMING2705/Auto-Key-Presser/blob/main/recorder.py">recorder.py</a>
+<a href="https://github.com/HVRGAMING2705/Auto-Key-Presser/blob/main/player.py">player.py</a>
 </div>
-<footer>Built by Vikranth Reddy · Combinatorics Toolkit</footer>
+<footer>Built by Vikranth Reddy · Macro Recorder</footer>
 </div>
 <script>
-function fact(n){let r=1n;for(let i=2n;i<=n;i++)r*=i;return r}
-function npr(n,r){if(r>n||r<0)return 0n;let x=1n;for(let i=0n;i<r;i++)x*=(n-i);return x}
-function ncr(n,r){if(r>n||r<0)return 0n;r=r<n-r?r:n-r;let x=1n;for(let i=1n;i<=r;i++)x=x*(n-r+i)/i;return x}
-function der(n){let a=1n,b=0n;for(let i=2n;i<=n;i++){let t=(i-1n)*(a+b);a=b;b=t}return n===0n?1n:b}
-const fmt=x=>x.toLocaleString('en-US');
-function calcNPR(){const n=BigInt(document.getElementById('npr-n').value||0),r=BigInt(document.getElementById('npr-r').value||0);document.getElementById('npr-out').innerHTML='P('+n+','+r+') = <b>'+fmt(npr(n,r))+'</b>'}
-function calcNCR(){const n=BigInt(document.getElementById('ncr-n').value||0),r=BigInt(document.getElementById('ncr-r').value||0);document.getElementById('ncr-out').innerHTML='C('+n+','+r+') = <b>'+fmt(ncr(n,r))+'</b>'}
-function calcFact(){const n=BigInt(document.getElementById('fact-n').value||0);document.getElementById('fact-out').innerHTML=n+'! = <b>'+fmt(fact(n))+'</b>'}
-function calcDer(){const n=BigInt(document.getElementById('der-n').value||0);document.getElementById('der-out').innerHTML='!'+n+' = <b>'+fmt(der(n))+'</b>'}
-calcNPR();calcNCR();calcFact();calcDer();
+const EVENTS=[['0.00s','key','tab'],['0.32s','type','"user@example.com"'],['1.10s','key','tab'],['1.15s','type','"••••••••"'],['1.90s','key','enter'],['2.60s','wait','0.5s'],['3.10s','click','(640, 480)']];
+function render(played){document.getElementById('macro').innerHTML=EVENTS.map((e,i)=>
+`<div class="mrow ${i<played?'played':''}"><span class="t">${e[0]}</span><span class="${e[1]==='key'?'k':'m'}">${e[1].toUpperCase()}</span><span>${e[2]}</span></div>`).join('')}
+render(0);
+function play(){const btn=document.getElementById('playbtn');btn.disabled=true;btn.textContent='Playing…';
+const spd=parseFloat(document.getElementById('spd').value),loops=parseInt(document.getElementById('loops').value);
+let i=0,lp=0;render(0);
+const t=setInterval(()=>{i++;if(i>EVENTS.length){lp++;if(lp>=loops){clearInterval(t);btn.disabled=false;btn.textContent='▶ Replay macro';render(EVENTS.length);return}i=1}
+render(i)},Math.round(600/spd))}
+function reset(){render(0)}
 const io=new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.add('on')),{threshold:.1});
 document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
 </script>
