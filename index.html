@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Macro Recorder — Capture. Edit. Replay.</title>
-<meta name="description" content="Auto-Key-Presser is a macro recorder demo: capture keyboard and mouse macros, edit them as JSON, and replay them at any speed with loop counts and an instant Esc abort. Built by Vikranth Reddy for UI testing, accessibility, and productivity.">
+<meta name="description" content="Macro Recorder: a desktop Python tool that records keyboard and mouse macros as editable JSON and replays them with loops, speed control and dry-run safety. This page cannot record your input — browsers can't — but its editor really validates macro JSON, simulates playback with true timing, and downloads a runnable macro file.">
 <meta name="keywords" content="macro recorder, auto key presser, keyboard macro, mouse macro, pynput, UI testing automation, macro replay">
 <meta name="author" content="Vikranth Reddy">
 <meta name="robots" content="index, follow">
@@ -12,23 +12,23 @@
 <meta name="theme-color" content="#0a0c10">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Macro Recorder — Capture. Edit. Replay.">
-<meta property="og:description" content="Auto-Key-Presser is a macro recorder demo: capture keyboard and mouse macros, edit them as JSON, and replay them at any speed with loop counts and an instant Esc abort. Built by Vikranth Reddy for UI testing, accessibility, and productivity.">
+<meta property="og:description" content="Desktop Python macro recorder (keyboard + mouse, JSON, loops, speed, dry-run) with a real in-browser macro editor, validator and timing simulator.">
 <meta property="og:url" content="https://auto-key-presser.vercel.app/">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Macro Recorder — Capture. Edit. Replay.">
-<meta name="twitter:description" content="Auto-Key-Presser is a macro recorder demo: capture keyboard and mouse macros, edit them as JSON, and replay them at any speed with loop counts and an instant Esc abort. Built by Vikranth Reddy for UI testing, accessibility, and productivity.">
+<meta name="twitter:description" content="Desktop Python macro recorder (keyboard + mouse, JSON, loops, speed, dry-run) with a real in-browser macro editor, validator and timing simulator.">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "WebApplication",
-  "name": "Macro Recorder \u2014 Capture. Edit. Replay.",
+  "name": "Macro Recorder — Capture. Edit. Replay.",
   "url": "https://auto-key-presser.vercel.app/",
   "author": {
     "@type": "Person",
     "name": "Vikranth Reddy"
   },
   "applicationCategory": "DeveloperApplication",
-  "operatingSystem": "Web"
+  "operatingSystem": "Windows, macOS, Linux"
 }
 </script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230a0c10'/><circle cx='50' cy='50' r='18' fill='%23f87171'/></svg>">
@@ -70,6 +70,14 @@ pre b{color:var(--acc2)}
 footer{margin-top:48px;color:var(--mut);font-size:13px;text-align:center}
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s,transform .6s}
 .reveal.on{opacity:1;transform:none}
+textarea{width:100%;min-height:250px;background:#05070a;color:#e8eaed;border:1px solid var(--line);border-radius:10px;padding:14px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.6;resize:vertical}
+input[type=text]{background:#0a0c10;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:11px 14px;font-size:14px;width:110px}
+.status{margin-top:12px;font-size:13px;line-height:1.7;color:var(--mut);white-space:pre-wrap}
+.status.err{color:#f87171}
+.status.ok{color:var(--acc2)}
+.bar{height:8px;background:#05070a;border:1px solid var(--line);border-radius:99px;overflow:hidden;margin:12px 0}
+.bar i{display:block;height:100%;width:0;background:var(--acc2)}
+.hint{color:var(--mut);font-size:13px;line-height:1.7;margin-bottom:12px}
 </style>
 <meta property="og:image" content="https://auto-key-presser.vercel.app/og.png">
 <meta name="twitter:image" content="https://auto-key-presser.vercel.app/og.png">
@@ -78,57 +86,252 @@ footer{margin-top:48px;color:var(--mut);font-size:13px;text-align:center}
 <div class="wrap">
 <div class="badge reveal">Auto-Key-Presser · Macro Recorder</div>
 <h1 class="reveal">Capture. Edit. <span>Replay.</span></h1>
-<p class="sub reveal">Record keyboard + mouse macros, edit them as JSON, replay at any speed with loop counts and an Esc abort. Watch a recorded macro play back below.</p>
+<p class="sub reveal">Record keyboard + mouse macros on your desktop, edit them as JSON, replay at any speed with loop counts, a dry-run preview, and an Esc abort.</p>
+
+<div class="note reveal"><b>Honest split — what runs where:</b> this web page <b>cannot</b> record your keyboard or mouse, and its “play” button does not press keys or click anything — browsers can't do that. Recording and live playback run on your desktop with the Python tool below. What this page <b>really</b> does: edit and validate real macro JSON (same schema the Python tool enforces), simulate playback with the macro's true timestamps, and download a runnable .json file. No accounts, no server: editor saves live only in your browser's localStorage.</div>
 
 <div class="grid">
-<div class="feat reveal"><h4>Record</h4><p>Capture keystrokes, clicks and timing with pynput — saved as editable JSON.</p></div>
-<div class="feat reveal"><h4>Edit</h4><p>Filter noise, trim silences, drop mouse moves, remap keys — macros are data.</p></div>
-<div class="feat reveal"><h4>Replay</h4><p>Loop counts, 0.25×–4× speed control, dry-run preview, Esc aborts instantly.</p></div>
+<div class="feat reveal"><h4>Record — desktop</h4><p>Capture keystrokes, clicks and timing with pynput — saved as editable JSON. Press Esc to stop; the Esc press itself is stripped from the recording.</p></div>
+<div class="feat reveal"><h4>Edit — here + JSON</h4><p>Filter noise, trim a time range, drop mouse moves, remap keys — macros are data. The editor below validates every event before you download.</p></div>
+<div class="feat reveal"><h4>Replay — desktop</h4><p>Loop counts, 0.25×–4× speed control, dry-run preview that touches nothing, Esc aborts instantly. Simulate first, here or with --dry-run.</p></div>
 </div>
 
-<div class="card reveal"><h3>Macro playback demo</h3>
-<div class="macro" id="macro"></div>
+<div class="card reveal"><h3>Macro editor — real JSON, validated, downloadable</h3>
+<p class="hint">Edit the sample (it uses the real schema: key_down, key_up, mouse_move, mouse_down, mouse_up — the same schema <b>python cli.py validate</b> enforces). Invalid files are refused with the exact problem, not silently accepted.</p>
+<textarea id="editor" spellcheck="false"></textarea>
 <div class="row">
-<button id="playbtn" onclick="play()">▶ Replay macro</button>
-<label>Speed <select id="spd"><option value="1">1×</option><option value="2">2×</option><option value="0.5">0.5×</option></select></label>
-<label>Loops <select id="loops"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
-<button class="ghost" onclick="reset()">Reset</button>
-</div></div>
+<button onclick="validateEditor()">✓ Validate</button>
+<button class="ghost" onclick="downloadMacro()">⬇ Download .json</button>
+<button class="ghost" onclick="saveBrowser()">Save in this browser</button>
+<button class="ghost" onclick="loadBrowser()">Load saved</button>
+<button class="ghost" onclick="resetSample()">Reset sample</button>
+</div>
+<div class="row">
+<label>Remap key <input type="text" id="remapFrom" placeholder="e.g. a"> → <input type="text" id="remapTo" placeholder="e.g. b"></label>
+<label><input type="checkbox" id="dropMoves"> Preview / simulate without mouse_move (like --drop-moves; download keeps the full file)</label>
+</div>
+<p class="hint">Remap applies to the preview, the simulation, and the download. Nothing is uploaded anywhere.</p>
+<div class="status" id="status"></div>
+</div>
 
-<div class="card reveal"><h3>macro.json — editable by hand</h3>
-<pre>{
-  "name": "login-flow",
-  "events": [
-    {"t": 0.0,  "type": "key",   "key": <b>"tab"</b>},
-    {"t": 0.3,  "type": "type",  "text": <b>"user@example.com"</b>},
-    {"t": 1.1,  "type": "key",   "key": <b>"tab"</b>},
-    {"t": 1.4,  "type": "key",   "key": <b>"enter"</b>}
-  ]
-}</pre></div>
+<div class="card reveal"><h3>Playback timeline — simulation with true timing</h3>
+<p class="hint"><b>SIMULATION ONLY — no keys are pressed, nothing is clicked.</b> Steps fire after the macro's real gaps between events ÷ speed (the old demo used fixed 600&nbsp;ms steps; this one doesn't). Press Esc on this page to stop the simulation.</p>
+<div class="macro" id="timeline"></div>
+<div class="bar"><i id="bar"></i></div>
+<div class="row">
+<button id="simbtn" onclick="simulate()">▶ Simulate playback</button>
+<button class="ghost" onclick="stopSim()">Stop (Esc)</button>
+<label>Speed <select id="spd"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+<label>Loops <select id="loops"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+</div>
+<div class="status" id="simstatus"></div>
+</div>
 
-<div class="note reveal"><b>Responsible use:</b> built for UI testing, accessibility, and personal productivity. Never use macros to spam, harass, or break any platform's terms.</div>
+<div class="card reveal"><h3>Dry-run safety preview — what the desktop run would do</h3>
+<p class="hint">The same numbers <b>python cli.py play --dry-run</b> reports: exact step count and total time, before anything touches your inputs. Run the command shown on your machine to confirm.</p>
+<div class="row"><button onclick="refreshPreview()">Refresh preview</button></div>
+<div class="status" id="preview"></div>
+</div>
+
+<div class="card reveal"><h3>Run it on your desktop</h3>
+<pre>pip install -r requirements.txt   <b># pynput — record / live playback only</b>
+python cli.py record --out demo.json
+python cli.py validate demo.json
+python cli.py info demo.json
+python cli.py play demo.json --loops 2 --speed 1.5 --dry-run   <b># safe: touches nothing</b>
+python cli.py play demo.json --loops 2 --speed 1.5             <b># live: Esc stops</b>
+python test_macro.py   <b># 45 headless checks, no display needed</b></pre></div>
+
+<div class="note reveal"><b>Responsible use:</b> built for UI testing, accessibility, and personal productivity. Only record and replay input on machines and applications you own or have explicit permission to automate. Never use macros to spam, harass, cheat where automation is prohibited, or break any platform's terms.</div>
 
 <div class="links reveal">
 <a href="https://github.com/HVRGAMING2705/Auto-Key-Presser">View source on GitHub</a>
 <a href="https://github.com/HVRGAMING2705/Auto-Key-Presser/blob/main/recorder.py">recorder.py</a>
 <a href="https://github.com/HVRGAMING2705/Auto-Key-Presser/blob/main/player.py">player.py</a>
+<a href="https://github.com/HVRGAMING2705/Auto-Key-Presser/blob/main/cli.py">cli.py</a>
 </div>
-<footer>Built by Vikranth Reddy · Macro Recorder<span class="fleet-legal" style="display:block;text-align:center;padding:10px 0;font-size:13px"><a href="/legal.html">Privacy · Terms</a></span>
+<footer>v2.0 — production release · Built by Vikranth Reddy · Macro Recorder<span class="fleet-legal" style="display:block;text-align:center;padding:10px 0;font-size:13px"><a href="/legal.html">Privacy · Terms</a></span>
+<p>Built by <a href="https://vikranthreddy.vercel.app">Vikranth Reddy</a></p>
 </footer>
 </div>
 <script>
-const EVENTS=[['0.00s','key','tab'],['0.32s','type','"user@example.com"'],['1.10s','key','tab'],['1.15s','type','"••••••••"'],['1.90s','key','enter'],['2.60s','wait','0.5s'],['3.10s','click','(640, 480)']];
-function render(played){document.getElementById('macro').innerHTML=EVENTS.map((e,i)=>
-`<div class="mrow ${i<played?'played':''}"><span class="t">${e[0]}</span><span class="${e[1]==='key'?'k':'m'}">${e[1].toUpperCase()}</span><span>${e[2]}</span></div>`).join('')}
-render(0);
-function play(){const btn=document.getElementById('playbtn');btn.disabled=true;btn.textContent='Playing…';
-const spd=parseFloat(document.getElementById('spd').value),loops=parseInt(document.getElementById('loops').value);
-let i=0,lp=0;render(0);
-const t=setInterval(()=>{i++;if(i>EVENTS.length){lp++;if(lp>=loops){clearInterval(t);btn.disabled=false;btn.textContent='▶ Replay macro';render(EVENTS.length);return}i=1}
-render(i)},Math.round(600/spd))}
-function reset(){render(0)}
-const io=new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.add('on')),{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+const TYPES=["key_down","key_up","mouse_move","mouse_down","mouse_up"];
+const LS_KEY="macro-recorder-macro-v2";
+const SAMPLE={name:"login-flow",events:[
+  {"type":"key_down","t":0.0,"key":"tab"},
+  {"type":"key_up","t":0.12,"key":"tab"},
+  {"type":"mouse_move","t":0.5,"x":640,"y":480},
+  {"type":"mouse_down","t":0.7,"x":640,"y":480,"button":"Button.left"},
+  {"type":"mouse_up","t":0.85,"x":640,"y":480,"button":"Button.left"},
+  {"type":"key_down","t":1.2,"key":"enter"},
+  {"type":"key_up","t":1.32,"key":"enter"}
+]};
+const editor=document.getElementById("editor");
+const statusEl=document.getElementById("status");
+const timelineEl=document.getElementById("timeline");
+const simStatus=document.getElementById("simstatus");
+const previewEl=document.getElementById("preview");
+const barEl=document.getElementById("bar");
+function setStatus(el,msg,cls){el.textContent=msg;el.className="status "+(cls||"")}
+function parseEditor(){
+  try{return {ok:true,macro:JSON.parse(editor.value)}}
+  catch(e){return {ok:false,error:"Not valid JSON: "+e.message}}
+}
+function validateMacro(m){
+  const errors=[],warnings=[];
+  if(!m||typeof m!=="object"||Array.isArray(m))return{errors:["Macro must be a JSON object with an 'events' list."],warnings};
+  if(!Array.isArray(m.events))errors.push("'events' must be a list.");
+  else m.events.forEach((e,i)=>{
+    if(!e||typeof e!=="object")return errors.push("Event "+i+": must be an object.");
+    if(!TYPES.includes(e.type))errors.push("Event "+i+": unknown type '"+e.type+"'. Allowed: "+TYPES.join(", ")+".");
+    if(typeof e.t!=="number"||!isFinite(e.t)||e.t<0)errors.push("Event "+i+": 't' must be a finite number >= 0.");
+    if((e.type==="key_down"||e.type==="key_up")&&!e.key)errors.push("Event "+i+": '"+e.type+"' needs a non-empty 'key'.");
+    if(["mouse_move","mouse_down","mouse_up"].includes(e.type)){
+      if(typeof e.x!=="number"||!isFinite(e.x)||typeof e.y!=="number"||!isFinite(e.y))errors.push("Event "+i+": '"+e.type+"' needs finite 'x' and 'y'.");
+    }
+    if(i>0&&typeof e.t==="number"&&typeof m.events[i-1].t==="number"&&e.t<m.events[i-1].t)
+      warnings.push("Event "+i+": out of time order — the desktop tool sorts events on load.");
+  });
+  if(Array.isArray(m.events)&&m.events.length===0)warnings.push("No events: a dry-run would play 0 steps.");
+  if(!m.name)warnings.push("No 'name': the desktop tool defaults it to 'untitled'.");
+  return{errors,warnings};
+}
+function stats(m){
+  const counts={};let dur=0;
+  m.events.forEach(e=>{counts[e.type]=(counts[e.type]||0)+1;if(e.t>dur)dur=e.t});
+  return{counts,dur};
+}
+function remapInfo(){
+  const from=document.getElementById("remapFrom").value.trim();
+  const to=document.getElementById("remapTo").value.trim();
+  return (from&&to&&from!==to)?{from,to}:null;
+}
+function currentMacro(){
+  const p=parseEditor();
+  if(!p.ok)return{ok:false,error:p.error};
+  const v=validateMacro(p.macro);
+  if(v.errors.length)return{ok:false,error:"Validation failed:\n• "+v.errors.join("\n• "),warnings:v.warnings};
+  const m=JSON.parse(JSON.stringify(p.macro));
+  const rm=remapInfo();
+  if(rm)m.events.forEach(e=>{if((e.type==="key_down"||e.type==="key_up")&&e.key===rm.from)e.key=rm.to});
+  return{ok:true,macro:m,warnings:v.warnings,remap:rm};
+}
+function simMacro(){
+  const c=currentMacro();
+  if(!c.ok)return c;
+  let events=c.macro.events.slice();
+  const dropped=document.getElementById("dropMoves").checked?events.filter(e=>e.type==="mouse_move").length:0;
+  if(document.getElementById("dropMoves").checked)events=events.filter(e=>e.type!=="mouse_move");
+  events.sort((a,b)=>a.t-b.t);
+  return{ok:true,macro:{name:c.macro.name,events},warnings:c.warnings,remap:c.remap,dropped};
+}
+function detail(e){
+  if(e.type==="key_down"||e.type==="key_up")return e.key||"(missing key)";
+  return "("+e.x+", "+e.y+")"+(e.button?" "+e.button:"");
+}
+function renderTimeline(events,played){
+  if(!events.length){timelineEl.innerHTML='<div class="mrow"><span class="t">—</span><span>No events to simulate.</span></div>';return}
+  timelineEl.innerHTML=events.map((e,i)=>
+    '<div class="mrow '+(i<played?"played":"")+'"><span class="t">'+e.t.toFixed(2)+'s</span><span class="'+(e.type.indexOf("key")===0?"k":"m")+'">'+e.type.toUpperCase()+'</span><span>'+detail(e)+'</span></div>').join("");
+}
+function validateEditor(){
+  const c=currentMacro();
+  if(!c.ok){setStatus(statusEl,c.error,"err");return false}
+  const s=stats(c.macro);
+  let msg="VALID — "+c.macro.events.length+" events, "+s.dur.toFixed(2)+"s, runnable with: python cli.py play <file> --dry-run\n";
+  msg+="Counts: "+Object.keys(s.counts).sort().map(k=>k+" "+s.counts[k]).join(", ");
+  if(c.remap)msg+="\nRemap applied: '"+c.remap.from+"' → '"+c.remap.to+"'.";
+  if(c.warnings.length)msg+="\nWarnings:\n• "+c.warnings.join("\n• ");
+  setStatus(statusEl,msg,"ok");
+  const sm=simMacro();if(sm.ok)renderTimeline(sm.macro.events,0);
+  return true;
+}
+function downloadMacro(){
+  const c=currentMacro();
+  if(!c.ok){setStatus(statusEl,c.error,"err");return}
+  const name=(c.macro.name||"untitled").replace(/[^a-zA-Z0-9_-]+/g,"-")||"macro";
+  const blob=new Blob([JSON.stringify(c.macro,null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name+".json";a.click();
+  URL.revokeObjectURL(a.href);
+  setStatus(statusEl,"Downloaded "+name+".json ("+c.macro.events.length+" events) — run it with: python cli.py play "+name+".json --dry-run","ok");
+}
+function saveBrowser(){
+  try{localStorage.setItem(LS_KEY,editor.value);setStatus(statusEl,"Saved in this browser only (localStorage) — never sent to a server.","ok")}
+  catch(e){setStatus(statusEl,"Could not save in this browser: "+e.message,"err")}
+}
+function loadBrowser(){
+  const v=localStorage.getItem(LS_KEY);
+  if(!v){setStatus(statusEl,"No saved macro in this browser yet. Press 'Save in this browser' first.","err");return}
+  editor.value=v;validateEditor();
+}
+function resetSample(){editor.value=JSON.stringify(SAMPLE,null,2);setStatus(statusEl,"Sample restored.","");renderTimeline(SAMPLE.events,0)}
+function refreshPreview(){
+  const sm=simMacro();
+  if(!sm.ok){setStatus(previewEl,sm.error,"err");return}
+  const spd=parseFloat(document.getElementById("spd").value);
+  const loops=parseInt(document.getElementById("loops").value);
+  const s=stats(sm.macro);
+  const steps=sm.macro.events.length*loops;
+  const total=s.dur/spd*loops;
+  let msg="Dry-run preview (simulation math, same as --dry-run):\n";
+  msg+="• Steps: "+sm.macro.events.length+" events × "+loops+" loop(s) = "+steps+" steps at "+spd+"×\n";
+  msg+="• Total simulated time: "+total.toFixed(2)+"s  (duration "+s.dur.toFixed(2)+"s ÷ "+spd+" × "+loops+")\n";
+  msg+="• Counts: "+(Object.keys(s.counts).length?Object.keys(s.counts).sort().map(k=>k+" "+s.counts[k]).join(", "):"none");
+  if(sm.dropped)msg+="\n• mouse_move dropped for preview: "+sm.dropped+" event(s) (download still keeps the full file).";
+  if(sm.remap)msg+="\n• Remap applied: '"+sm.remap.from+"' → '"+sm.remap.to+"'.";
+  msg+="\n• Desktop check: python cli.py play <file> --loops "+loops+" --speed "+spd+" --dry-run";
+  setStatus(previewEl,msg,"ok");
+}
+let simTimer=null,simActive=false;
+function stopSim(){
+  if(simTimer)clearTimeout(simTimer);
+  simTimer=null;
+  if(simActive){simActive=false;document.getElementById("simbtn").disabled=false;document.getElementById("simbtn").textContent="▶ Simulate playback";setStatus(simStatus,"Simulation stopped — nothing was sent (simulation only).","");}
+}
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&simActive)stopSim()});
+function simulate(){
+  const sm=simMacro();
+  if(!sm.ok){setStatus(simStatus,sm.error,"err");return}
+  const events=sm.macro.events;
+  if(!events.length){setStatus(simStatus,"Nothing to simulate: the macro has 0 events.","err");return}
+  const spd=parseFloat(document.getElementById("spd").value);
+  const loops=parseInt(document.getElementById("loops").value);
+  const dur=stats({events}).dur/spd;
+  const total=dur*loops;
+  const btn=document.getElementById("simbtn");
+  btn.disabled=true;btn.textContent="Simulating…";simActive=true;
+  renderTimeline(events,0);barEl.style.width="0%";
+  // Build the exact plan the Python DryRunPlayer.plan() builds:
+  // per loop, each step fires after (scaled t − previous scaled t).
+  const steps=[];
+  for(let lp=0;lp<loops;lp++){let prev=0;events.forEach((e,i)=>{const st=e.t/spd;steps.push({loop:lp,idx:i,delay:st-prev,t:st});prev=st})}
+  let si=0;
+  function next(){
+    if(!simActive)return;
+    if(si>=steps.length){
+      simActive=false;btn.disabled=false;btn.textContent="▶ Simulate playback";
+      barEl.style.width="100%";renderTimeline(events,events.length);
+      setStatus(simStatus,"Simulation finished: "+steps.length+" step(s) across "+loops+" loop(s) in "+total.toFixed(2)+"s at "+spd+"× — no keys pressed, nothing clicked.","ok");
+      return;
+    }
+    const st=steps[si];
+    const elapsed=st.loop*dur+st.t;
+    renderTimeline(events,st.idx+1);
+    barEl.style.width=(total>0?Math.min(100,elapsed/total*100):100)+"%";
+    setStatus(simStatus,"Simulating loop "+(st.loop+1)+" of "+loops+" — event "+(st.idx+1)+" of "+events.length+" — "+elapsed.toFixed(2)+"s / "+total.toFixed(2)+"s at "+spd+"× (simulation only).","");
+    si++;
+    simTimer=setTimeout(next,Math.max(0,steps[si]?steps[si].delay*1000:0));
+  }
+  simTimer=setTimeout(next,Math.max(0,steps[0].delay*1000));
+}
+(function init(){
+  const saved=localStorage.getItem(LS_KEY);
+  if(saved){editor.value=saved;renderTimeline(SAMPLE.events,0);setStatus(statusEl,"Restored your saved macro from this browser. Press Validate to check it.","");}
+  else{editor.value=JSON.stringify(SAMPLE,null,2);renderTimeline(SAMPLE.events,0)}
+  refreshPreview();
+})();
+const io=new IntersectionObserver(e=>e.forEach(x=>x.isIntersecting&&x.target.classList.add("on")),{threshold:.1});
+document.querySelectorAll(".reveal").forEach(el=>io.observe(el));
 </script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>

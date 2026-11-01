@@ -21,21 +21,33 @@ Playback can always be stopped instantly with Esc.
 ## Features
 
 - `recorder.py` — captures key down/up, mouse moves (throttled),
-  clicks with timestamps; Esc stops recording
-- `macro.py` — `Macro` model: JSON save/load, `filter_type`,
-  `trim`, `drop_mouse_moves`, `with_speed` editing
+  clicks with timestamps; Esc stops recording and the Esc press
+  itself is stripped from the saved macro
+- `macro.py` — `Macro` model: strict JSON save/load (unknown event
+  types, missing keys, negative/NaN times are rejected with a clear
+  `ValueError`, never a traceback), `filter_type`, `trim`,
+  `drop_mouse_moves`, `with_speed`, `remap_keys` editing
 - `player.py` — faithful-timing replay; `--loops`, `--speed`,
   `--drop-moves`; Esc aborts mid-playback; `DryRunPlayer` for
-  headless simulation
-- `cli.py` — `record`, `play`, `info` subcommands
-- `test_macro.py` — headless test suite (model, editing,
-  serialization, playback)
+  headless simulation (imports no `pynput`, so it can never emit
+  real input) with `plan()` — the exact timed step list the web
+  simulator mirrors
+- `cli.py` — `record`, `play`, `info`, `validate` subcommands
+- `test_macro.py` — headless test suite (45 checks: model, editing,
+  serialization, playback, schema rejection, speed/loop edge cases)
+- `index.html` — honest web companion: this page **cannot** record
+  your keyboard or mouse (browsers can't). It really does edit and
+  validate macro JSON against the same schema, simulate playback
+  with true timestamps ÷ speed, preview dry-run step counts/times,
+  remap keys, and download a runnable `.json`. Edited macros save
+  only to your browser's localStorage — nothing is uploaded.
 
 ## How to run
 
 ```bash
 pip install -r requirements.txt   # pynput (record/live-play only)
 python cli.py record --out demo.json
+python cli.py validate demo.json
 python cli.py info demo.json
 python cli.py play demo.json --loops 2 --speed 1.5
 python cli.py play demo.json --dry-run      # simulate, touch nothing

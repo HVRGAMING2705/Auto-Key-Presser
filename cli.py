@@ -42,6 +42,14 @@ def cmd_info(args):
         print(f"  {k:12s} {kinds[k]}")
 
 
+def cmd_validate(args):
+    macro = Macro.load(args.macro)
+    print(f"VALID: {args.macro}")
+    print(f"name:     {macro.name}")
+    print(f"events:   {len(macro.events)}")
+    print(f"duration: {macro.duration:.2f}s")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Macro Recorder — record and replay input macros.")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -65,10 +73,14 @@ def main(argv=None):
     i.add_argument("macro")
     i.set_defaults(fn=cmd_info)
 
+    v = sub.add_parser("validate", help="strictly validate a macro file's schema")
+    v.add_argument("macro")
+    v.set_defaults(fn=cmd_validate)
+
     args = ap.parse_args(argv)
     try:
         args.fn(args)
-    except (OSError, ValueError, RuntimeError) as exc:
+    except (OSError, ValueError, RuntimeError, KeyError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
     return 0

@@ -2,9 +2,30 @@
 editable, replayable.
 """
 import json
-import time
+import math
 
 EVENT_TYPES = ("key_down", "key_up", "mouse_move", "mouse_down", "mouse_up")
+
+
+def _validate_event_dict(e):
+    """Validate one raw event dict; raise ValueError (never KeyError)."""
+    if not isinstance(e, dict):
+        raise ValueError(f"event must be an object, got {e!r}")
+    etype = e.get("type")
+    if etype not in EVENT_TYPES:
+        raise ValueError(f"unknown event type {etype!r}")
+    t = e.get("t")
+    if isinstance(t, bool) or not isinstance(t, (int, float)) \
+            or not math.isfinite(t) or t < 0:
+        raise ValueError(f"event time must be a finite number >= 0, got {t!r}")
+    if etype in ("key_down", "key_up") and not e.get("key"):
+        raise ValueError(f"{etype} event needs a non-empty 'key'")
+    if etype in ("mouse_move", "mouse_down", "mouse_up"):
+        for axis in ("x", "y"):
+            v = e.get(axis)
+            if isinstance(v, bool) or not isinstance(v, (int, float)) \
+                    or not math.isfinite(v):
+                raise ValueError(f"{etype} event needs a finite '{axis}', got {v!r}")
 
 
 class Macro:
@@ -17,8 +38,9 @@ class Macro:
     def add(self, etype, t, **kwargs):
         if etype not in EVENT_TYPES:
             raise ValueError(f"unknown event type {etype!r}")
-        if t < 0:
-            raise ValueError("event time must be >= 0")
+        if isinstance(t, bool) or not isinstance(t, (int, float)) \
+                or not math.isfinite(t) or t < 0:
+            raise ValueError(f"event time must be a finite number >= 0, got {t!r}")
         self.events.append({"type": etype, "t": round(t, 4), **kwargs})
         self.events.sort(key=lambda e: e["t"])
 
@@ -31,8 +53,15 @@ class Macro:
 
     @classmethod
     def from_dict(cls, d):
+        if not isinstance(d, dict):
+            raise ValueError(f"macro must be an object, got {type(d).__name__}")
+        events = d.get("events", [])
+        if not isinstance(events, list):
+            raise ValueError("'events' must be a list")
+        for e in events:
+            _validate_event_dict(e)
         m = cls(d.get("name", "untitled"))
-        for e in d.get("events", []):
+        for e in events:
             m.add(e["type"], e["t"],
                   **{k: v for k, v in e.items() if k not in ("type", "t")})
         return m
@@ -50,12 +79,16 @@ class Macro:
 
     def filter_type(self, etype):
         """Return a new macro with only events of the given type."""
+        if etype not in EVENT_TYPES:
+            raise ValueError(f"unknown event type {etype!r}")
         m = Macro(self.name + f"_{etype}")
         m.events = [e for e in self.events if e["type"] == etype]
         return m
 
     def trim(self, start, end):
         """Keep events in [start, end), re-based so t=0 is `start`."""
+        if start < 0 or end <= start:
+            raise ValueError(f"trim needs 0 <= start < end, got {start}, {end}")
         m = Macro(self.name + "_trimmed")
         for e in self.events:
             if start <= e["t"] < end:
@@ -68,6 +101,23 @@ class Macro:
         """Remove noisy mouse_move events (keeps clicks)."""
         m = Macro(self.name + "_nocursor")
         m.events = [e for e in self.events if e["type"] != "mouse_move"]
+        return m
+
+    def remap_keys(self, mapping):
+        """Return a new macro with key_down/key_up keys remapped.
+
+        mapping: {old_key: new_key}. Keys not in the mapping are unchanged.
+        This is what backs the web editor's remap box and makes the
+        site's "remap keys" claim real.
+        """
+        if not isinstance(mapping, dict) or not mapping:
+            raise ValueError("remap mapping must be a non-empty object")
+        m = Macro(self.name + "_remapped")
+        for e in self.events:
+            e2 = dict(e)
+            if e2["type"] in ("key_down", "key_up") and e2.get("key") in mapping:
+                e2["key"] = mapping[e2["key"]]
+            m.events.append(e2)
         return m
 
     def with_speed(self, factor):

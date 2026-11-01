@@ -24,6 +24,7 @@ class Recorder:
         self.macro = Macro(name)
         self._t0 = time.time()
         self._stop = False
+        self._last_move_t = None
 
         def on_press(key):
             self.macro.add("key_down", self._now(), key=_key_name(key))
@@ -35,9 +36,13 @@ class Recorder:
             self.macro.add("key_up", self._now(), key=_key_name(key))
 
         def on_move(x, y):
-            # throttle: record moves at most every 50 ms
-            if not self.macro.events or self._now() - self.macro.events[-1]["t"] > 0.05:
-                self.macro.add("mouse_move", self._now(), x=x, y=y)
+            # throttle: record moves at most every 50 ms, tracked against
+            # the last *mouse_move* (old code compared against whatever
+            # the last event happened to be, e.g. a key press).
+            now = self._now()
+            if self._last_move_t is None or now - self._last_move_t > 0.05:
+                self._last_move_t = now
+                self.macro.add("mouse_move", now, x=x, y=y)
 
         def on_click(x, y, button, pressed):
             self.macro.add("mouse_down" if pressed else "mouse_up",
@@ -52,9 +57,10 @@ class Recorder:
             time.sleep(0.05)
         kl.stop()
         ml.stop()
-        # drop the Esc key_up that stopped us (usually noise)
+        # drop the Esc key_down AND key_up that stopped us (old code only
+        # dropped key_up, so a replayed macro would itself press Esc).
         self.macro.events = [e for e in self.macro.events
-                             if not (e["type"] == "key_up" and e.get("key") == "Key.esc")]
+                             if e.get("key") != "Key.esc"]
         print(f"Recorded {len(self.macro.events)} events "
               f"({self.macro.duration:.1f}s).")
         return self.macro
